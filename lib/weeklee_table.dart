@@ -86,8 +86,7 @@ class WeekleeTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Table(
       /// Sets the border for the table, defaults to a subtle grey border.
-      border: tableBorder ?? TableBorder.all(color: Colors.grey.shade300),
-
+      border: tableBorder,
       /// Dynamically assigns column widths based on the `flex` property.
       columnWidths: {
         if (showCheckBoxes) 0: const FixedColumnWidth(40),
