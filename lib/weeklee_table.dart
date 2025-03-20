@@ -45,6 +45,11 @@ class WeekleeTable extends StatelessWidget {
       horizontal: 12,
     ),
     this.columnAlignment = Alignment.centerLeft,
+    this.showCheckBoxes = false,
+    this.showHeaderCheckBox = true,
+    this.checkboxPadding,
+    this.allSelected = false,
+    this.onSelectAll,
   });
 
   /// Default padding applied to all table cells unless overridden per column.
@@ -65,6 +70,18 @@ class WeekleeTable extends StatelessWidget {
   /// Border styling for the table.
   final TableBorder? tableBorder;
 
+  /// Whether to show checkboxes in the first column.
+  final bool showCheckBoxes;
+
+  /// Whether to show checkboxes in the header row.
+  final bool showHeaderCheckBox;
+
+  final EdgeInsets? checkboxPadding;
+
+  final bool allSelected;
+
+  final ValueChanged<bool>? onSelectAll;
+
   @override
   Widget build(BuildContext context) {
     return Table(
@@ -73,8 +90,11 @@ class WeekleeTable extends StatelessWidget {
 
       /// Dynamically assigns column widths based on the `flex` property.
       columnWidths: {
+        if (showCheckBoxes) 0: const FixedColumnWidth(40),
         for (var i = 0; i < columns.length; i++)
-          i: FlexColumnWidth(columns[i].flex?.toDouble() ?? 1),
+          i + (showCheckBoxes ? 1 : 0): FlexColumnWidth(
+            columns[i].flex?.toDouble() ?? 1,
+          ),
       },
 
       /// Builds the table rows, including the header and data rows.
@@ -92,13 +112,22 @@ class WeekleeTable extends StatelessWidget {
     return TableRow(
       decoration:
           headerDecoration ?? BoxDecoration(color: Colors.grey.shade200),
-      children:
-          columns
-              .map(
-                (column) =>
-                    _buildCell(column.child, column.padding, column.alignment),
-              )
-              .toList(),
+      children: [
+        if (showCheckBoxes && showHeaderCheckBox)
+          Container(
+            width: 50,
+            padding: checkboxPadding ?? EdgeInsets.zero,
+            child: Checkbox(value: allSelected, onChanged: (value) {
+              onSelectAll?.call(value ?? false);
+            }),
+          )
+        else if (showCheckBoxes)
+          SizedBox(width: 50),
+        ...columns.map(
+          (column) =>
+              _buildCell(column.child, column.padding, column.alignment, null,),
+        ),
+      ],
     );
   }
 
@@ -112,46 +141,52 @@ class WeekleeTable extends StatelessWidget {
 
     return TableRow(
       decoration: row.decoration,
-      children: List.generate(columns.length, (index) {
-        return _buildCell(
-          row.cells[index],
-          columns[index].padding,
-          columns[index].alignment,
-        );
-      }),
+      children: [
+        if (showCheckBoxes)
+          Container(
+            width: 50,
+            padding: checkboxPadding ?? EdgeInsets.zero,
+            child: Checkbox(
+              value: row.isSelected,
+              onChanged: (value) => row.onSelect?.call(value ?? false),
+            ),
+          ),
+        ...List.generate(columns.length, (index) {
+          return _buildCell(
+            row.cells[index],
+            columns[index].padding,
+            columns[index].alignment,
+            row.onTap,
+          );
+        }),
+      ],
     );
   }
 
   /// Wraps a cell widget inside a `Container` with proper padding and alignment.
-  Widget _buildCell(Widget child, EdgeInsets? padding, Alignment? alignment) {
-    return Container(
-      padding: padding ?? columnPadding,
-      alignment: alignment ?? columnAlignment,
-      child: child,
+  Widget _buildCell(
+    Widget child,
+    EdgeInsets? padding,
+    Alignment? alignment,
+    VoidCallback? onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      focusColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      child: Container(
+        padding: padding ?? columnPadding,
+        alignment: alignment ?? columnAlignment,
+        child: child,
+      ),
     );
   }
 }
 
 /// Defines a column within the `WeekleeTable`.
-///
-/// Each column can have a custom widget for the header, along with optional
-/// padding, alignment, and flexible width.
-///
-/// Example:
-/// ```dart
-/// WeekleeTableColumn(
-///   child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
-///   flex: 2,
-///   alignment: Alignment.center,
-/// )
-/// ```
 class WeekleeTableColumn {
-  /// Creates a table column with a child widget and optional properties.
-  ///
-  /// - [child] is the widget displayed in the column header.
-  /// - [flex] determines the column's width distribution (default: 1).
-  /// - [padding] overrides the default table cell padding.
-  /// - [alignment] overrides the default column alignment.
   const WeekleeTableColumn({
     this.flex,
     required this.child,
@@ -159,41 +194,34 @@ class WeekleeTableColumn {
     this.alignment,
   });
 
-  /// Determines how much space the column should take relative to other columns.
   final int? flex;
-
-  /// The widget displayed in the column header.
   final Widget child;
-
-  /// Optional padding for cells in this column.
   final EdgeInsets? padding;
-
-  /// Optional alignment for cells in this column.
   final Alignment? alignment;
 }
 
 /// Defines a row within the `WeekleeTable`.
-///
-/// Rows contain a list of widgets (`cells`), and an optional decoration
-/// for custom styling.
-///
-/// Example:
-/// ```dart
-/// WeekleeTableRow(
-///   cells: [Text('Alice'), Text('25')],
-///   decoration: BoxDecoration(color: Colors.grey[100]),
-/// )
-/// ```
 class WeekleeTableRow {
-  /// Creates a table row with a list of cell widgets.
-  ///
-  /// - [cells] contains the widgets to be displayed in the row.
-  /// - [decoration] allows for custom styling of the row.
-  const WeekleeTableRow({required this.cells, this.decoration});
+  const WeekleeTableRow({
+    required this.cells,
+    this.decoration,
+    this.onTap,
+    this.isSelected = false,
+    this.onSelect,
+  });
 
   /// The list of widgets representing each cell in the row.
   final List<Widget> cells;
 
   /// Optional decoration for styling the row (e.g., background color).
   final BoxDecoration? decoration;
+
+  /// Callback when the row is tapped.
+  final VoidCallback? onTap;
+
+  /// Whether the row is selected (used for checkbox state).
+  final bool isSelected;
+
+  /// Callback when the checkbox is toggled.
+  final ValueChanged<bool>? onSelect;
 }
