@@ -124,7 +124,7 @@ class WeekleeTable extends StatelessWidget {
           SizedBox(width: 50),
         ...columns.map(
           (column) =>
-              _buildCell(column.child, column.padding, column.alignment, null,),
+              _buildCell(column.child, column.padding, column.alignment, column.onTap,),
         ),
       ],
     );
@@ -191,12 +191,14 @@ class WeekleeTableColumn {
     required this.child,
     this.padding,
     this.alignment,
+    this.onTap,
   });
 
   final int? flex;
   final Widget child;
   final EdgeInsets? padding;
   final Alignment? alignment;
+  final VoidCallback? onTap;
 }
 
 /// Defines a row within the `WeekleeTable`.
